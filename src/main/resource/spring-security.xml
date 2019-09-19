@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:sercurity="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd">
+
+        <!--使用了这个标签，spring帮我们生成了springSecurityFilterChain的过滤器类 -->
+        <!--还要加上uto-config="true" 不然报错 -->
+        <sercurity:http auto-config="true" >
+            <!--isFullyAuthenticated 该资源需要认证才能访问-->
+            <!-- isAnonymous：只有匿名用户可以访问 -->
+            <!--permitAll 都可以进行访问 -->
+            <!--
+                isAuthenticated()       Returns true if the user is not anonymous
+                isFullyAuthenticated()  Returns true if the user is not an anonymous or a remember-me user
+             -->
+            <sercurity:intercept-url pattern="/index" access="permitAll()"/>
+            <sercurity:intercept-url pattern="/page/*" access="isAuthenticated()"/>
+
+            <!--最后一道防线 -->
+            <sercurity:intercept-url pattern="/**" access="isFullyAuthenticated()"/>
+
+            <!--如果一个没有登录的用户访问一个需要认证的页面，会弹出一个登录提示框。
+                没有这个也无所谓，spring有一个默认登录页面（如果你不指定的话）
+             -->
+            <sercurity:http-basic />
+        </sercurity:http>
+
+        <!--认证管理器 -->
+        <sercurity:authentication-manager>
+
+            <sercurity:authentication-provider>
+                <sercurity:user-service>
+                    <sercurity:user name="dxg" password="123" authorities="admin" />
+                </sercurity:user-service>
+
+            </sercurity:authentication-provider>
+
+        </sercurity:authentication-manager>
+</beans>
