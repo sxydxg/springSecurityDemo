@@ -15,15 +15,43 @@
                 isFullyAuthenticated()  Returns true if the user is not an anonymous or a remember-me user
              -->
             <sercurity:intercept-url pattern="/index" access="permitAll()"/>
+            <!--/login 配置也行，不配置也行 -->
+            <sercurity:intercept-url pattern="/login" access="permitAll()" />
+            <sercurity:intercept-url pattern="/logoutpage" access="permitAll()" />
             <sercurity:intercept-url pattern="/page/*" access="isAuthenticated()"/>
 
             <!--最后一道防线 -->
             <sercurity:intercept-url pattern="/**" access="isFullyAuthenticated()"/>
 
+            <!--登录拦截器
+                login-processing-url="" 登录处理逻辑的url  默认是/login post 提交方式
+                login-page              登录页面
+                username-parameter      指定username参数名
+                password-parameter      指定password参数名
+                authentication-success-forward-url   认证失败跳转的页面（还有认证失败，等等）
+                authentication-success-handler-ref    认证成功的执行处理器
+            -->
+            <sercurity:form-login login-page="/login" username-parameter="username" password-parameter="password"
+                                  authentication-success-forward-url="/index"  />
+
+            <!--登录退出拦截器（会清除所有认证信息，包括rememberMe）
+              shiro登录退出应该也是会清除rememberMe信息的，
+              关闭浏览器，在打开浏览器，服务器还认得你
+
+              invalidate-session="true"   使会话无效
+              logout-url                  登录退出的url
+              logout-success-url           成功退出，需要跳转的url(重定向)
+              success-handler-ref          成功退出后调用的处理器
+             -->
+            <sercurity:logout invalidate-session="true" logout-url="/logout" logout-success-url="/logoutpage"  />
+
+            <!-- 关闭csrf 好像是跨站防护-->
+            <sercurity:csrf disabled="true" />
             <!--如果一个没有登录的用户访问一个需要认证的页面，会弹出一个登录提示框。
                 没有这个也无所谓，spring有一个默认登录页面（如果你不指定的话）
              -->
-            <sercurity:http-basic />
+            <!--<sercurity:http-basic />-->
+
         </sercurity:http>
 
         <!--认证管理器 -->

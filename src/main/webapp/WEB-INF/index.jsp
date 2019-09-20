@@ -7,7 +7,8 @@
 <a href="/page/productAdd" >商品添加</a><br/>
 <a href="/page/productUpdate" >商品修改</a><br/>
 <a href="/page/productDelete" >商品删除</a><br/>
-
+<br/>
+<h1><a href="/logout" >登录退出</a> </h1>
 
 </body>
 </html>
