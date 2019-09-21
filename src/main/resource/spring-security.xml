@@ -2,26 +2,34 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:sercurity="http://www.springframework.org/schema/security"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd">
+       xmlns:tool="http://www.springframework.org/schema/tool"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd http://www.springframework.org/schema/tool http://www.springframework.org/schema/tool/spring-tool.xsd">
 
+
+    <!--能够使用那2个注解 -->
+        <sercurity:global-method-security pre-post-annotations="enabled" />
         <!--使用了这个标签，spring帮我们生成了springSecurityFilterChain的过滤器类 -->
         <!--还要加上uto-config="true" 不然报错 -->
         <sercurity:http auto-config="true" >
-            <!--isFullyAuthenticated 该资源需要认证才能访问-->
+            <!--isFullyAuthenticated 需要用户登录才可以，rememberMe都不行-->
             <!-- isAnonymous：只有匿名用户可以访问 -->
             <!--permitAll 都可以进行访问 -->
             <!--
-                isAuthenticated()       Returns true if the user is not anonymous
-                isFullyAuthenticated()  Returns true if the user is not an anonymous or a remember-me user
+                isAuthenticated()       登录用户和RememberMe都行
+                isFullyAuthenticated()  必须要登录（rememberMe不会放行）
              -->
+            <sercurity:intercept-url pattern="/favicon.ico" access="permitAll()"/>
+            <sercurity:intercept-url pattern="/" access="permitAll()" />
             <sercurity:intercept-url pattern="/index" access="permitAll()"/>
             <!--/login 配置也行，不配置也行 -->
             <sercurity:intercept-url pattern="/login" access="permitAll()" />
             <sercurity:intercept-url pattern="/logoutpage" access="permitAll()" />
             <sercurity:intercept-url pattern="/page/*" access="isAuthenticated()"/>
-
+            <!--打印当前用户拥有的所有角色 -->
+            <sercurity:intercept-url pattern="/showRoles" access="isAuthenticated()" />
+            <sercurity:intercept-url pattern="/testAnnotation" access="isFullyAuthenticated()"/>
             <!--最后一道防线 -->
-            <sercurity:intercept-url pattern="/**" access="isFullyAuthenticated()"/>
+            <sercurity:intercept-url pattern="/**" access="isAuthenticated()"/>
 
             <!--登录拦截器
                 login-processing-url="" 登录处理逻辑的url  默认是/login post 提交方式
@@ -45,8 +53,16 @@
              -->
             <sercurity:logout invalidate-session="true" logout-url="/logout" logout-success-url="/logoutpage"  />
 
+            <!--记住我  -->
+            <sercurity:remember-me key="dxg_rememberme" remember-me-parameter="dxg_rememberme" />
+
+
             <!-- 关闭csrf 好像是跨站防护-->
             <sercurity:csrf disabled="true" />
+
+            <!--权限不足跳转的页面 -->
+            <sercurity:access-denied-handler error-page="/mydenied" />
+
             <!--如果一个没有登录的用户访问一个需要认证的页面，会弹出一个登录提示框。
                 没有这个也无所谓，spring有一个默认登录页面（如果你不指定的话）
              -->
@@ -57,12 +73,58 @@
         <!--认证管理器 -->
         <sercurity:authentication-manager>
 
-            <sercurity:authentication-provider>
-                <sercurity:user-service>
+            <sercurity:authentication-provider user-service-ref="myJdbcUserService">
+                <!--<sercurity:user-service >
                     <sercurity:user name="dxg" password="123" authorities="admin" />
-                </sercurity:user-service>
-
+                </sercurity:user-service>-->
+                <!--配置密码编码器 -->
+                <sercurity:password-encoder ref="passwordEncoder" >
+                    <!--使用盐 -->
+                    <sercurity:salt-source ref="reflectionSaltSource" />
+                </sercurity:password-encoder>
             </sercurity:authentication-provider>
 
         </sercurity:authentication-manager>
+
+        <!--调用一下init方法初始化”数据“ -->
+        <bean id="myJdbcUserService" init-method="init" class="jdbcUserService.JdbcUserService" />
+
+        <!-- 密码编码器（这里采用sha函数），在encoding下面还有很多子类可供选择 如md5-->
+        <bean id="passwordEncoder" class="org.springframework.security.authentication.encoding.ShaPasswordEncoder">
+
+        </bean>
+
+        <!--为密码加盐，salt有2个实现类
+                ReflectionSaltSource    动态的盐值
+                SystemWideSaltSource   静态盐值
+         -->
+        <bean id="reflectionSaltSource" class="org.springframework.security.authentication.dao.ReflectionSaltSource" >
+           <!--从我们返回UserDetail对象中获取 username getter方法的值-->
+            <property name="userPropertyToUse" value="username" />
+
+        </bean>
+
+
+
+    <!--怎么使用呀？在哪里将其替换呢？ -->
+    <!-- 注入 roleVoter修改rolePrefix,否则Spring要求权限必须以ROLE_开头 -->
+    <bean id="accessDecisionManager" class="org.springframework.security.access.vote.AffirmativeBased">
+        <constructor-arg name="decisionVoters">
+            <list>
+                <ref bean="roleVoter" />
+                <ref bean="authenticatedVoter" />
+            </list>
+        </constructor-arg>
+    </bean>
+
+    <!-- 修改rolePrefix,否则Spring要求权限必须以ROLE_开头 -->
+    <bean id="roleVoter" class="org.springframework.security.access.vote.RoleVoter">
+        <property name="rolePrefix" value=""></property>
+    </bean>
+
+    <bean id="authenticatedVoter" class="org.springframework.security.access.vote.AuthenticatedVoter" />
+
+
+
+
 </beans>

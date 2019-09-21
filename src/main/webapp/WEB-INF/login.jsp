@@ -16,7 +16,7 @@
 
     <input type="text" name="username"><br/>
     <input type="text" name="password"><br/>
-    <input type="checkbox" value="记住我"><br/>
+    <input type="checkbox" name="dxg_rememberme">记住我<br/>
     <input type="submit" value="提交">
 </form>
 </body>
